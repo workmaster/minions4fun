@@ -18,7 +18,7 @@ var MenuLayer = cc.Layer.extend({
 		//4. create a background image and set it's position at the center of the screen
 		this.spritebg = cc.Sprite(res.background_png);
 		this.spritebg.setPosition(centerpos);
-		this.spritebg.setOpacity(0); // 渐变值
+		this.spritebg.setOpacity(20); // 渐变值
 		this.addChild(this.spritebg, 0);
 //		spritebg.runAction(
 //		cc.sequence(
@@ -45,9 +45,6 @@ var MenuLayer = cc.Layer.extend({
 
 	onPlay : function(){
 		cc.log("==onplay clicked");
-		this.spritebg.runAction(
-				cc.FadeOut.create(1.5)
-		); // 貌似无效
 		cc.director.runScene(new PlayScene());
 	}
 });

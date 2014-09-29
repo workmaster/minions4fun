@@ -1,7 +1,6 @@
 var StatusLayer = cc.Layer.extend({
 	labelCoin:null,
 	labelMeter:null,
-	coins:0,
 
 	ctor:function () {
 		this._super();
@@ -22,5 +21,19 @@ var StatusLayer = cc.Layer.extend({
 		this.labelMeter = cc.LabelTTF.create("风力大小:0", "Helvetica", 20);
 		this.labelMeter.setPosition(cc.p(winsize.width - 70, winsize.height - 60));
 		this.addChild(this.labelMeter);
+		
+		var menuItemPlay= cc.MenuItemSprite.create(
+				cc.Sprite.create(res.CloseNormal_png), // normal state image
+				cc.Sprite.create(res.CloseSelected_png), //select state image
+				this.onPlay, this);
+		var menu = cc.Menu.create(menuItemPlay);  //7. create the menu
+		menu.setPosition(winsize.width - 70, winsize.height - 90);
+		this.addChild(menu);
+	},
+	onPlay : function(){
+		cc.log("==game over");
+		cc.director.pause();
+//		cc.director.runScene(new GameOverLayer());
+		this.addChild(new GameOverLayer());
 	}
 });
