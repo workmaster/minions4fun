@@ -3,6 +3,7 @@ var PlayScene = cc.Scene.extend({
 		this._super();
 		//add three layer in the right order
 		this.addChild(new BackgroundLayer());
+		this.addChild(new TestPhysicsLayer());
 		this.addChild(new AnimationLayer());
 		this.addChild(new StatusLayer());
 	}
