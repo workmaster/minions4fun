@@ -1,3 +1,6 @@
+var FLUID_DENSITY = 0.00014;
+var FLUID_DRAG = 2.0;
+
 var TestPhysicsLayer = cc.Layer.extend({
 	_debugNode: null,           //测试NODE
 
@@ -16,6 +19,8 @@ var TestPhysicsLayer = cc.Layer.extend({
 	rightBlockArray: null,      //右侧出来的BLOCK
 	leftBodyArray: null,        //左侧出来的BLOCK物体
 	rightBodyArray: null,       //右侧出来的BLOCK物体
+	
+	waterBoxBody: null,
 	
 	ctor:function () {
 		this._super();
@@ -43,23 +48,59 @@ var TestPhysicsLayer = cc.Layer.extend({
 		space.sleepTimeThreshold = 0.5;     //休眠临界时间
 		space.collisionSlop = 0.5;          //
 
-		// Walls--四个边界
-		var walls = [ new cp.SegmentShape( staticBody, cp.v(0,0-1), cp.v(winSize.width,0), 0-1 ),                // bottom
-		              new cp.SegmentShape( staticBody, cp.v(0,winSize.height), cp.v(winSize.width,winSize.height), 0),    // top
-		              new cp.SegmentShape( staticBody, cp.v(0,0), cp.v(0,winSize.height), 0),                // left
-		              new cp.SegmentShape( staticBody, cp.v(winSize.width,0), cp.v(winSize.width,winSize.height), 0)    // right
-		];
-		for( var i=0; i < walls.length; i++ ) {
-			var shape = walls[i];
-			shape.setElasticity(1);         //弹性
-			shape.setFriction(0);           //摩擦
-			//space.addStaticShape( shape );
-			space.addShape( shape );
-			if(i >= 2){
-				shape.setCollisionType(3);
-			}
-			shape.setLayers(1);
-		}
+		
+		//----------------水面开始---------------
+		// Add the edges of the bucket
+		var bb = new cp.BB(0, 0, winSize.width, 110);
+		var radius = 5.0;
+
+		var shape = space.addShape( new cp.SegmentShape(staticBody, cp.v(bb.l, bb.b), cp.v(bb.l, bb.t), radius));
+		shape.setElasticity(1.0);
+		shape.setFriction(1.0);
+
+		shape = space.addShape( new cp.SegmentShape(staticBody, cp.v(bb.r, bb.b), cp.v(bb.r, bb.t), radius));
+		shape.setElasticity(1.0);
+		shape.setFriction(1.0);
+
+		shape = space.addShape( new cp.SegmentShape(staticBody, cp.v(bb.l, bb.b), cp.v(bb.r, bb.b), radius));
+		shape.setElasticity(1.0);
+		shape.setFriction(1.0);
+
+		// Add the sensor for the water.
+		shape = space.addShape( new cp.BoxShape2(staticBody, bb) );
+		shape.setSensor(true);
+		shape.setCollisionType(1);
+		// }
+	
+		//木块
+		var width = 20.0;
+		var height = 20.0;
+		var mass = 0.5*FLUID_DENSITY*width*height;
+		var moment = cp.momentForBox(mass, width, height);
+
+		body = space.addBody( new cp.Body(mass, moment));
+		body.setPos( cp.v(580, 250));
+		body.setVel( cp.v(0, -100));
+		body.setAngVel( 1 );
+		this.waterBoxBody = body;
+
+		shape = space.addShape( new cp.BoxShape(body, width, height));
+		shape.setFriction(0.8);
+		space.addCollisionHandler( 1, 0, null, this.waterPreSolve, null, null);
+		//----------------水面结束---------------
+		
+	},
+	
+	doForceBox: function () {
+		this.scheduleUpdate();
+
+		var speed = 20;
+		var x = this.boxDirectionX * speed * Math.cos(110*Math.PI/180);
+		var y = speed * Math.sin(60*Math.PI/180);
+//		this.box.getBody().setVel(cp.v(0,0));
+//		this.box.getBody().applyImpulse(cp.v(x,y), cp.v(0, 0));
+
+		this.waterBoxBody.applyImpulse(cp.v(x,y), cp.v(0, 0));
 	},
 	
 
@@ -74,20 +115,20 @@ var TestPhysicsLayer = cc.Layer.extend({
 		var mass = 1;
 		var boxWidth = 32;
 
-		var body = new cp.Body(mass, cp.momentForBox(mass, boxWidth, boxWidth) );
-		body.setPos( cc.p(winSize.width/2, winSize.height/2) );
-		this.space.addBody( body );
-		var shape = new cp.BoxShape( body, boxWidth, boxWidth);
-		shape.setElasticity( 0.5 );
-		shape.setFriction( 0.3 );
-		shape.setCollisionType(1);
-		shape.setLayers(3);
-		this.space.addShape( shape );
+//		var body = new cp.Body(mass, cp.momentForBox(mass, boxWidth, boxWidth) );
+//		body.setPos( cc.p(winSize.width/2, winSize.height/2) );
+//		this.space.addBody( body );
+//		var shape = new cp.BoxShape( body, boxWidth, boxWidth);
+//		shape.setElasticity( 0.5 );
+//		shape.setFriction( 0.3 );
+//		shape.setCollisionType(1);
+//		shape.setLayers(3);
+//		this.space.addShape( shape );
 
 		//创建一个箱子
 		this.box = cc.PhysicsSprite.create(res.CloseNormal_png,cc.rect(0,0,boxWidth,boxWidth));
 		this.box.setBody(body);
-		this.addChild(this.box,1);
+//		this.addChild(this.box,1);
 		this.box.setTag(101);
 
 		//上下移动
@@ -116,76 +157,18 @@ var TestPhysicsLayer = cc.Layer.extend({
 			cc.eventManager.addListener({
 				event: cc.EventListener.MOUSE,
 				onMouseDown: function(event){
-					
+					event.getCurrentTarget().processEvent( event );
 				}
 			}, this);
 		}
 
-		//
-		this.scheduleUpdate();
-
-		//添加碰撞监听事件
-		// 1 & 2 检测box和上下BLOCK碰撞
-		this.space.addCollisionHandler( 1, 2,
-				this.collisionBegin.bind(this),
-				this.collisionPre.bind(this),
-				this.collisionPost.bind(this),
-				this.collisionSeparate.bind(this)
-		);
-		// 1 & 3 检测box和左右边界碰撞
-		this.space.addCollisionHandler( 1, 3,
-				this.collisionBegin.bind(this),
-				this.collisionPre.bind(this),
-				this.collisionPost.bind(this),
-				this.collisionSeparate.bind(this)
-		);
-		// 1 & 4 检测box和左右BLOCK碰撞
-		this.space.addCollisionHandler( 1, 4,
-				this.collisionBegin.bind(this),
-				this.collisionPre.bind(this),
-				this.collisionPost.bind(this),
-				this.collisionSeparate.bind(this)
-		);
+		//物理世界更新
+//		this.scheduleUpdate();
 	},
 	
-	collisionBegin : function ( arbiter, space ) {
-
-		var shapes = arbiter.getShapes();
-
-		var shapeA = shapes[0];
-		var shapeB = shapes[1];
-
-		var collTypeA = shapeA.collision_type;
-		var collTypeB = shapeB.collision_type;
-
-		if(collTypeB == 3){
-			console.log( 'Collision Type A:' + collTypeA );
-			console.log( 'end Collision Type B:' + collTypeB );
-
-			this.boxDirectionX = -this.boxDirectionX;
-
-			this.space.addPostStepCallback(function () {
-				this.updateBoxAndBlocks();
-			}.bind(this));
-		}else if(collTypeB == 2 || collTypeB == 4)
-		{//碰到上下墙壁 或者 左右出来的BLOCKS 就Gameover
-			this.gameOver();
-		}
-
-		return true;
-	},
-
-	collisionPre : function ( arbiter, space ) {
-		//console.log('collision pre');
-		return true;
-	},
-
-	collisionPost : function ( arbiter, space ) {
-		//console.log('collision post');
-	},
-
-	collisionSeparate : function ( arbiter, space ) {
-		//console.log('collision separate');
+	//事件处理
+	processEvent: function (event) {
+		this.doForceBox(); 
 	},
 	
 	update: function (dt) {
@@ -193,3 +176,71 @@ var TestPhysicsLayer = cc.Layer.extend({
 		this.space.step(1/60.0);
 	},
 });
+
+TestPhysicsLayer.prototype.waterPreSolve = function(arb, space) {
+	var shapes = arb.getShapes();
+	var water = shapes[0];
+	var poly = shapes[1];
+
+	var body = poly.getBody();
+
+	// Get the top of the water sensor bounding box to use as the water level.
+	var level = water.getBB().t;
+
+	// Clip the polygon against the water level
+	var count = poly.getNumVerts();
+
+	var clipped = [];
+
+	var j=count-1;
+	for(var i=0; i<count; i++) {
+		var a = body.local2World( poly.getVert(j));
+		var b = body.local2World( poly.getVert(i));
+
+		if(a.y < level){
+			clipped.push( a.x );
+			clipped.push( a.y );
+		}
+
+		var a_level = a.y - level;
+		var b_level = b.y - level;
+
+		if(a_level*b_level < 0.0){
+			var t = Math.abs(a_level)/(Math.abs(a_level) + Math.abs(b_level));
+
+			var v = cp.v.lerp(a, b, t);
+			clipped.push(v.x);
+			clipped.push(v.y);
+		}
+		j=i;
+	}
+
+	// Calculate buoyancy from the clipped polygon area
+	var clippedArea = cp.areaForPoly(clipped);
+
+	var displacedMass = clippedArea*FLUID_DENSITY;
+	var centroid = cp.centroidForPoly(clipped);
+	var r = cp.v.sub(centroid, body.getPos());
+
+	var dt = space.getCurrentTimeStep();
+	var g = space.gravity;
+
+	// Apply the buoyancy force as an impulse.
+	body.applyImpulse( cp.v.mult(g, -displacedMass*dt), r);
+
+	// Apply linear damping for the fluid drag.
+	var v_centroid = cp.v.add(body.getVel(), cp.v.mult(cp.v.perp(r), body.w));
+	var k = 1; //k_scalar_body(body, r, cp.v.normalize_safe(v_centroid));
+	var damping = clippedArea*FLUID_DRAG*FLUID_DENSITY;
+	var v_coef = Math.exp(-damping*dt*k); // linear drag
+//	var v_coef = 1.0/(1.0 + damping*dt*cp.v.len(v_centroid)*k); // quadratic drag
+	body.applyImpulse( cp.v.mult(cp.v.sub(cp.v.mult(v_centroid, v_coef), v_centroid), 1.0/k), r);
+
+	// Apply angular damping for the fluid drag.
+	var w_damping = cp.momentForPoly(FLUID_DRAG*FLUID_DENSITY*clippedArea, clipped, cp.v.neg(body.p));
+	body.w *= Math.exp(-w_damping*dt* (1/body.i));
+
+//	cc.log("waterPreSolve"+body.getMass());
+	body.setMass(body.getMass()+0.00015);
+	return true;
+};
