@@ -2,10 +2,31 @@ var AnimationLayer = cc.Layer.extend({
 	spriteOwner:null, 		// 己方
 	spriteEnemy:null,		// 敌方
 	spriteSheet:null, 		// 动画循环
+	spriteSheet2:null, 		// 敌方动画循环
 	laughingAction:null, 	// 击中笑场动作
+	laughingAction2:null, 	// 敌方击中笑场动作
 	ctor:function () {
 		this._super();
 		this.init();
+	},
+	initAction:function(target_plist,target_png,target_Sheet,startpos,endpos)
+	{
+		// create sprite sheet
+		cc.spriteFrameCache.addSpriteFrames(target_plist);
+		target_Sheet = cc.SpriteBatchNode.create(target_png);
+		this.addChild(target_Sheet);
+
+		// init laughingAction
+		var animFrames = [];
+		for (var i = startpos; i < endpos; i++) {
+			var str = i + ".png";
+			var frame = cc.spriteFrameCache.getSpriteFrame(str);
+			animFrames.push(frame);
+		}
+
+		var animation = cc.Animation.create(animFrames, 0.1);
+		actionObj = cc.Repeat.create(cc.Animate.create(animation), 1);
+		return actionObj;
 	},
 	init:function () {
 		this._super();
@@ -19,23 +40,10 @@ var AnimationLayer = cc.Layer.extend({
 		this.spriteEnemy.attr({x: winsize.width /2 - 250, y: winsize.height});
 		
 		//this.initAction();
-		
-		// create sprite sheet
-		cc.spriteFrameCache.addSpriteFrames(res.laught_plist);
-		this.spriteSheet = cc.SpriteBatchNode.create(res.laught_png);
-		this.addChild(this.spriteSheet);
-		
-		// init laughingAction
-		var animFrames = [];
-		for (var i = 50; i < 68; i++) {
-			var str = i + ".png";
-			var frame = cc.spriteFrameCache.getSpriteFrame(str);
-			animFrames.push(frame);
-		}
-		
-		var animation = cc.Animation.create(animFrames, 0.1);
-		this.laughingAction = cc.Repeat.create(cc.Animate.create(animation), 1);
+		this.laughingAction = this.initAction(res.laught_plist, res.laught_png, res.spriteSheet, 50, 68);
 		this.laughingAction.retain(); // 不想自动释放内存
+		this.laughingAction2 = this.initAction(res.enemy_laught_plist, res.enemy_laught_png, res.spriteSheet2, 111, 127);
+		this.laughingAction2.retain(); 
 
 		//create the move action
 		var action2Owner = cc.MoveTo.create(0.5, cc.p(winsize.width - 226, winsize.height / 2 + 27));
@@ -85,6 +93,7 @@ var AnimationLayer = cc.Layer.extend({
 	laught:function (){
 		cc.log("laughing");
 		this.spriteOwner.runAction(this.laughingAction);
+		this.spriteEnemy.runAction(this.laughingAction2);
 	},
 	onExit:function() {
 		this.laughingAction.release();
