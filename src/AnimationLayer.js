@@ -5,9 +5,21 @@ var AnimationLayer = cc.Layer.extend({
 	spriteSheet2:null, 		// 敌方动画循环
 	laughingAction:null, 	// 击中笑场动作
 	laughingAction2:null, 	// 敌方击中笑场动作
-	ctor:function () {
+	
+	_debugNode: null,           //测试NODE
+	space: null,                //物理世界
+	body:null,
+	shape:null,
+	
+	ctor:function (space) {
+		this.space = space;
 		this._super();
 		this.init();
+		
+		this._debugNode = cc.PhysicsDebugNode.create(this.space);
+		this._debugNode.setVisible(true);
+		// Parallax ratio and offset
+		this.addChild(this._debugNode, 10);
 	},
 	initAction:function(target_plist,target_png,target_Sheet,startpos,endpos)
 	{
@@ -32,8 +44,17 @@ var AnimationLayer = cc.Layer.extend({
 		this._super();
 
 		//create the hero sprite
-		this.spriteOwner = cc.Sprite.create(res.Worker_png);
+		this.spriteOwner = cc.PhysicsSprite.create(res.Worker_png);
 		this.spriteEnemy = cc.Sprite.create(res.Worker2_png);
+		
+		//---test physics start---
+		var contentSize = this.spriteOwner.getContentSize();
+		this.body = new cp.Body(1, cp.momentForBox(1, contentSize.width, contentSize.height));
+		this.space.addBody(this.body);
+		this.shape = new cp.BoxShape(this.body, contentSize.width - 14, contentSize.height);
+		this.space.addShape(this.shape);
+		this.spriteOwner.setBody(this.body);
+		//---test physics end---
 		
 		var winsize = cc.director.getWinSize();
 		this.spriteOwner.attr({x: winsize.width - 226, y: winsize.height});

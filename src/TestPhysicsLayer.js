@@ -3,23 +3,9 @@ var FLUID_DRAG = 2.0;
 
 var TestPhysicsLayer = cc.Layer.extend({
 	_debugNode: null,           //测试NODE
-
 	space: null,                //物理世界
-
-	blockBatchNode: null,
-
-	box: null,                 //
-	downUpAction: null,     //开场时，上下移动的动画
+	box: null,                 
 	boxDirectionX: 1,          //飞的方向 -1为向左飞 1为向右飞
-
-	titleLabel: null,           //标题
-	scoreLabel: null,           //分数
-
-	leftBlockArray: null,       //左侧出来的BLOCK
-	rightBlockArray: null,      //右侧出来的BLOCK
-	leftBodyArray: null,        //左侧出来的BLOCK物体
-	rightBodyArray: null,       //右侧出来的BLOCK物体
-	
 	waterBoxBody: null,
 	
 	ctor:function () {
@@ -32,7 +18,6 @@ var TestPhysicsLayer = cc.Layer.extend({
 		//初始化物理世界
 		this.space = new cp.Space();
 		this.initPhysics();
-		this.initBoxWithBody();
 	},
 	
 	initPhysics: function () {
@@ -70,7 +55,6 @@ var TestPhysicsLayer = cc.Layer.extend({
 		shape = space.addShape( new cp.BoxShape2(staticBody, bb) );
 		shape.setSensor(true);
 		shape.setCollisionType(1);
-		// }
 	
 		//木块
 		var width = 20.0;
@@ -88,7 +72,6 @@ var TestPhysicsLayer = cc.Layer.extend({
 		shape.setFriction(0.8);
 		space.addCollisionHandler( 1, 0, null, this.waterPreSolve, null, null);
 		//----------------水面结束---------------
-		
 	},
 	
 	doForceBox: function () {
@@ -102,40 +85,10 @@ var TestPhysicsLayer = cc.Layer.extend({
 
 		this.waterBoxBody.applyImpulse(cp.v(x,y), cp.v(0, 0));
 	},
-	
 
 	initDebugMode: function () {
 		this._debugNode = cc.PhysicsDebugNode.create(this.space);
 		this.addChild(this._debugNode);
-	},
-	
-	initBoxWithBody: function () {
-		var winSize = cc.director.getWinSize();
-		//物体的定义
-		var mass = 1;
-		var boxWidth = 32;
-
-//		var body = new cp.Body(mass, cp.momentForBox(mass, boxWidth, boxWidth) );
-//		body.setPos( cc.p(winSize.width/2, winSize.height/2) );
-//		this.space.addBody( body );
-//		var shape = new cp.BoxShape( body, boxWidth, boxWidth);
-//		shape.setElasticity( 0.5 );
-//		shape.setFriction( 0.3 );
-//		shape.setCollisionType(1);
-//		shape.setLayers(3);
-//		this.space.addShape( shape );
-
-		//创建一个箱子
-		this.box = cc.PhysicsSprite.create(res.CloseNormal_png,cc.rect(0,0,boxWidth,boxWidth));
-		this.box.setBody(body);
-//		this.addChild(this.box,1);
-		this.box.setTag(101);
-
-		//上下移动
-		var moveTo1 = cc.MoveTo.create(0.5, winSize.width / 2, this.box.y + 40);
-		var moveTo2 = cc.MoveTo.create(0.5, winSize.width / 2, this.box.y - 40);
-//		this.downUpAction = cc.RepeatForever.create(cc.Sequence.create(moveTo1,moveTo2));
-//		this.box.runAction(this.downUpAction);
 	},
 	
 	onEnter: function () {
