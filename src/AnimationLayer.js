@@ -44,7 +44,7 @@ var AnimationLayer = cc.Layer.extend({
 		this._super();
 
 		//create the hero sprite
-		this.spriteOwner = cc.PhysicsSprite.create(res.Worker_png);
+		this.spriteOwner = new cc.PhysicsSprite(res.Worker_png);
 		this.spriteEnemy = cc.Sprite.create(res.Worker2_png);
 		
 		//---test physics start---
@@ -54,11 +54,13 @@ var AnimationLayer = cc.Layer.extend({
 		this.shape = new cp.BoxShape(this.body, contentSize.width - 14, contentSize.height);
 		this.space.addShape(this.shape);
 		this.spriteOwner.setBody(this.body);
+		this.scheduleUpdate();
 		//---test physics end---
 		
 		var winsize = cc.director.getWinSize();
 		this.spriteOwner.attr({x: winsize.width - 226, y: winsize.height});
 		this.spriteEnemy.attr({x: winsize.width /2 - 250, y: winsize.height});
+//		this.body.setPos( cp.v(winsize.width, winsize.height));
 		
 		//this.initAction();
 		this.laughingAction = this.initAction(res.laught_plist, res.laught_png, res.spriteSheet, 50, 68);
@@ -86,8 +88,6 @@ var AnimationLayer = cc.Layer.extend({
 				)
 		);
 		this.addChild(this.spriteEnemy);
-		
-		
 		
 //		this.sprite = cc.Sprite.create("#50.png");
 //		this.sprite.attr({x:80, y:85, scale: 0.35});
@@ -119,5 +119,9 @@ var AnimationLayer = cc.Layer.extend({
 	onExit:function() {
 		this.laughingAction.release();
 		this._super();
+	},
+	update: function (dt) {
+		//这个必须有，物理世界对刚体的处理
+		this.space.step(1/60.0);
 	}
 });
